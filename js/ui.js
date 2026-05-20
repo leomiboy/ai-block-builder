@@ -120,75 +120,60 @@ export function drawTargetThumbnail(levelDef) {
 
   ctx.clearRect(0, 0, W, H);
 
-  // 等角投影工具
-  const ISO_X  = 0.866; // cos30°
-  const ISO_Y  = 0.5;   // sin30°
-  const SCALE  = 16;
-  const OX = W / 2, OY = H * 0.8;
+  const ISO_X = 0.866;
+  const ISO_Y = 0.5;
+  const SCALE = 12;
+  const OX = W / 2, OY = H * 0.75;
 
   function isoProject(gx, gy, gz) {
     return {
       x: OX + (gx - gz) * ISO_X * SCALE,
-      y: OY - gy * SCALE * 0.85 - (gx + gz) * ISO_Y * SCALE,
+      y: OY - gy * SCALE - (gx + gz) * ISO_Y * SCALE,
     };
   }
 
-  function drawBlock(gx, stackY, gz, w, h, d, colorHex) {
+  function drawBlock(gx, gy, gz, w, h, d, colorHex) {
     const hexStr = '#' + colorHex.toString(16).padStart(6, '0');
+    const p = (dx, dy, dz) => isoProject(gx + dx, gy + dy, gz + dz);
 
-    // 三個面：頂、右、左
-    const p = (dx, dy, dz) => isoProject(gx + dx, stackY + dy, gz + dz);
+    const faces = [
+      { pts: [p(0,0,0), p(0,h,0), p(0,h,d), p(0,0,d)], light: -45 }, // Left
+      { pts: [p(0,0,d), p(0,h,d), p(w,h,d), p(w,0,d)], light: -25 }, // Right
+      { pts: [p(0,h,0), p(w,h,0), p(w,h,d), p(0,h,d)], light: 20 }   // Top
+    ];
 
-    // 左面（暗）
-    ctx.beginPath();
-    const lp = [p(0,0,0), p(0,h,0), p(0,h,d), p(0,0,d)];
-    ctx.moveTo(lp[0].x, lp[0].y);
-    lp.slice(1).forEach(pt => ctx.lineTo(pt.x, pt.y));
-    ctx.closePath();
-    ctx.fillStyle = shadeColor(hexStr, -45);
-    ctx.fill();
-
-    // 右面（中）
-    ctx.beginPath();
-    const rp = [p(w,0,0), p(w,h,0), p(w,h,d), p(w,0,d)];
-    ctx.moveTo(rp[0].x, rp[0].y);
-    rp.slice(1).forEach(pt => ctx.lineTo(pt.x, pt.y));
-    ctx.closePath();
-    ctx.fillStyle = shadeColor(hexStr, -25);
-    ctx.fill();
-
-    // 頂面（亮）
-    ctx.beginPath();
-    const tp = [p(0,h,0), p(w,h,0), p(w,h,d), p(0,h,d)];
-    ctx.moveTo(tp[0].x, tp[0].y);
-    tp.slice(1).forEach(pt => ctx.lineTo(pt.x, pt.y));
-    ctx.closePath();
-    ctx.fillStyle = shadeColor(hexStr, 20);
-    ctx.fill();
-
-    // 輪廓
-    [...[lp, rp, tp]].forEach(face => {
+    faces.forEach(f => {
       ctx.beginPath();
-      ctx.moveTo(face[0].x, face[0].y);
-      face.slice(1).forEach(pt => ctx.lineTo(pt.x, pt.y));
+      ctx.moveTo(f.pts[0].x, f.pts[0].y);
+      f.pts.slice(1).forEach(pt => ctx.lineTo(pt.x, pt.y));
       ctx.closePath();
-      ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillStyle = shadeColor(hexStr, f.light);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
       ctx.lineWidth = 0.5;
       ctx.stroke();
     });
   }
 
-  // 計算每格的堆疊 Y
+  // 格子間距（與 3D 場景一致，但縮圖用較小的 GRID）
+  const GRID = 4;
   const stackMap = {};
-  levelDef.target.forEach(t => {
+
+  for (const t of levelDef.target) {
     const key = `${t.gridX},${t.gridZ}`;
     if (!stackMap[key]) stackMap[key] = 0;
-    const [w, h, d] = getDims(t.state);
-    const stackY = stackMap[key];
-    const css = COLORS[t.color].hex;
-    drawBlock(t.gridX, stackY / SCALE, t.gridZ, w / SCALE, h / SCALE, d / SCALE, css);
-    stackMap[key] += h;
-  });
+
+    const [bw, bh, bd] = getDims(t.state);
+    // 直接傳遊戲原始單位，isoProject 的 SCALE 負責縮放到像素
+    drawBlock(
+      t.gridX * GRID,   // 格子轉世界 X
+      stackMap[key],    // 堆疊 Y（遊戲單位）
+      t.gridZ * GRID,   // 格子轉世界 Z
+      bw, bh, bd,       // 積木尺寸（原始單位，不除以任何值）
+      COLORS[t.color].hex,
+    );
+    stackMap[key] += bh;
+  }
 }
 
 function getDims(state) {
