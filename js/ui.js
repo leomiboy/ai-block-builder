@@ -137,9 +137,12 @@ export function drawTargetThumbnail(levelDef) {
     const p = (dx, dy, dz) => isoProject(gx + dx, gy + dy, gz + dz);
 
     const faces = [
-      { pts: [p(0,0,0), p(0,h,0), p(0,h,d), p(0,0,d)], light: -45 }, // Left
-      { pts: [p(0,0,d), p(0,h,d), p(w,h,d), p(w,0,d)], light: -25 }, // Right
-      { pts: [p(0,h,0), p(w,h,0), p(w,h,d), p(0,h,d)], light: 20 }   // Top
+      // 右前面（x = x0+w），中等亮度
+      { pts: [p(w,0,0), p(w,h,0), p(w,h,d), p(w,0,d)], light: -20 },
+      // 左前面（z = 0），最暗
+      { pts: [p(0,0,0), p(w,0,0), p(w,h,0), p(0,h,0)], light: -40 },
+      // 頂面（y = y0+h），最亮，最後畫避免被蓋住
+      { pts: [p(0,h,0), p(w,h,0), p(w,h,d), p(0,h,d)], light: 35 },
     ];
 
     faces.forEach(f => {
