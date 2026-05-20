@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 機械手臂積木師</title>
+  <meta name="description" content="透過語音對 AI 機械手臂下達指令，堆疊積木完成目標模型！訓練兒童結構化思考與空間認知。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- GSAP (global) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <!-- Three.js import map -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- ===================== SCREEN: WELCOME ===================== -->
+  <div id="screen-welcome" class="screen active">
+    <div class="welcome-bg"></div>
+    <div class="welcome-card">
+      <div class="logo-area">
+        <div class="logo-emoji">🤖</div>
+        <h1>AI 積木建築師</h1>
+        <p class="subtitle">對機械手臂說話，堆出漂亮的積木塔！</p>
+      </div>
+
+      <div class="form-group">
+        <label for="player-name">你的名字</label>
+        <input type="text" id="player-name" placeholder="例如：小明" maxlength="8" autocomplete="off" />
+      </div>
+
+      <div class="difficulty-select">
+        <p class="label">選擇難度</p>
+        <div class="diff-buttons">
+          <button class="diff-btn active" data-diff="tutorial" id="diff-tutorial">
+            <span class="diff-icon">🌱</span>
+            <span class="diff-name">新手訓練營</span>
+            <span class="diff-desc">一步一步學</span>
+          </button>
+          <button class="diff-btn" data-diff="easy" id="diff-easy">
+            <span class="diff-icon">⭐</span>
+            <span class="diff-name">初階模式</span>
+            <span class="diff-desc">一句一個動作</span>
+          </button>
+          <button class="diff-btn" data-diff="medium" id="diff-medium">
+            <span class="diff-icon">🚀</span>
+            <span class="diff-name">中階模式</span>
+            <span class="diff-desc">完整堆疊指令</span>
+          </button>
+        </div>
+      </div>
+
+      <button id="start-btn" class="btn-primary">開始挑戰！ 🎮</button>
+    </div>
+  </div>
+
+  <!-- ===================== SCREEN: GAME ===================== -->
+  <div id="screen-game" class="screen">
+
+    <!-- HUD Top Bar -->
+    <div id="hud-top">
+      <div id="level-info">
+        <span class="level-label">第</span>
+        <span id="level-num">1</span>
+        <span class="level-label">關</span>
+      </div>
+      <div id="progress-bar-wrap">
+        <div id="progress-bar">
+          <div id="progress-fill"></div>
+        </div>
+        <span id="progress-text">0 / 1 層</span>
+      </div>
+      <div id="hud-actions">
+        <button id="xray-btn" class="hud-btn" title="透視模式（看穿積木）">🔍</button>
+        <button id="undo-btn" class="hud-btn" title="時光倒流">↩️</button>
+        <button id="menu-btn" class="hud-btn" title="回主選單">🏠</button>
+      </div>
+    </div>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- Target Model Panel -->
+    <div id="target-panel">
+      <div class="panel-title">🎯 目標</div>
+      <canvas id="target-canvas" width="140" height="140"></canvas>
+    </div>
+
+    <!-- AI Command Display -->
+    <div id="command-display">
+      <div id="command-icon">💬</div>
+      <div id="command-text">按住麥克風，對我說話吧！</div>
+    </div>
+
+    <!-- Mic / PTT Button -->
+    <div id="mic-area">
+      <button id="mic-btn" aria-label="按住說話">
+        <div class="mic-rings">
+          <div class="ring r1"></div>
+          <div class="ring r2"></div>
+          <div class="ring r3"></div>
+        </div>
+        <span id="mic-icon">🎤</span>
+        <div id="sound-wave" class="hidden">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </button>
+      <p id="mic-hint">按住說話</p>
+    </div>
+
+    <!-- Available Blocks Info -->
+    <div id="blocks-panel">
+      <div class="panel-title">📦 積木</div>
+      <div id="blocks-list"></div>
+    </div>
+
+  </div>
+
+  <!-- ===================== OVERLAY: CELEBRATE ===================== -->
+  <div id="layer-celebrate" class="overlay hidden">
+    <div class="celebrate-inner">
+      <div class="celebrate-emoji" id="celebrate-emoji">🎉</div>
+      <div class="celebrate-text" id="celebrate-text">太棒了！</div>
+      <div class="celebrate-sub" id="celebrate-sub"></div>
+    </div>
+  </div>
+
+  <!-- ===================== OVERLAY: GHOST HINT ===================== -->
+  <div id="ghost-hint-banner" class="overlay hidden">
+    <div class="hint-inner">
+      <span>💡</span>
+      <span id="hint-text">跟著我說：</span>
+      <span id="hint-phrase" class="hint-phrase"></span>
+    </div>
+  </div>
+
+  <!-- ===================== SCREEN: WIN ===================== -->
+  <div id="screen-win" class="screen">
+    <div class="win-card">
+      <div class="trophy-emoji">🏆</div>
+      <h2 id="win-title">恭喜過關！</h2>
+      <p id="win-subtitle"></p>
+      <canvas id="certificate-canvas" width="560" height="360"></canvas>
+      <div class="win-buttons">
+        <button id="download-cert" class="btn-secondary">📥 下載證書</button>
+        <button id="play-again" class="btn-primary">🎮 再玩一次</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entry point -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
