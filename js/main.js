@@ -135,7 +135,7 @@ function loadLevel(levelDef) {
   setCommand(`第 ${LEVELS.indexOf(levelDef) + 1} 關：${levelDef.name}`, 'success');
 
   // 目標縮圖
-  try { drawTargetThumbnail(levelDef); } catch (e) {}
+  try { drawTargetThumbnail(levelDef); } catch (e) { console.error('[Thumbnail error]', e); }
 
   // 關卡提示（難度對應說明）
   document.getElementById('level-num').textContent = LEVELS.indexOf(levelDef) + 1;
