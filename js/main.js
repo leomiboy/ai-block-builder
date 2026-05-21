@@ -72,17 +72,16 @@ function initGame() {
     onEnd:    () => setMicState(false),
   });
 
-  // 麥克風按鈕（Push-to-Talk）
+  // 麥克風按鈕 — Toggle 模式（點一下開始，偵測到靜音後自動停止）
   const micBtn = document.getElementById('mic-btn');
-  const isMobile = 'ontouchstart' in window;
-
-  if (isMobile) {
-    micBtn.addEventListener('touchstart', e => { e.preventDefault(); startListening(); });
-    micBtn.addEventListener('touchend',   () => stopListening());
-  } else {
-    micBtn.addEventListener('mousedown', () => startListening());
-    micBtn.addEventListener('mouseup',   () => stopListening());
-  }
+  micBtn.addEventListener('click', () => {
+    // 用 voiceInput 的 isRecording 狀態判斷
+    if (document.getElementById('mic-btn').classList.contains('recording')) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  });
 
   // HUD 按鈕
   document.getElementById('xray-btn').addEventListener('click', toggleXRay);
