@@ -29,22 +29,24 @@ export function initVoice({ onResult, onStart, onEnd }) {
 
   recognition.onstart = () => {
     _isRecording = true;
+    console.log('[Voice] 🎙️ 開始錄音');
     if (_onStart) _onStart();
   };
 
   recognition.onresult = (event) => {
     const text = event.results[0][0].transcript.trim();
-    console.log('[Voice] 辨識結果：', text);
+    console.log('[Voice] ✅ 辨識結果：', text);
     if (_onResult) _onResult(text);
   };
 
   recognition.onerror = (event) => {
-    console.warn('[Voice] 錯誤：', event.error);
+    console.warn('[Voice] ❌ 錯誤：', event.error);
     _isRecording = false;
     if (_onEnd) _onEnd(null);
   };
 
   recognition.onend = () => {
+    console.log('[Voice] 🔚 錄音結束');
     _isRecording = false;
     if (_onEnd) _onEnd();
   };
@@ -53,6 +55,7 @@ export function initVoice({ onResult, onStart, onEnd }) {
 }
 
 export function startListening() {
+  console.log('[Voice] startListening() called, _isRecording=', _isRecording);
   if (!recognition || _isRecording) return;
   try {
     recognition.start();
@@ -62,6 +65,7 @@ export function startListening() {
 }
 
 export function stopListening() {
+  console.log('[Voice] stopListening() called, _isRecording=', _isRecording);
   if (!recognition || !_isRecording) return;
   recognition.stop();
 }
